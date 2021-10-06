@@ -1,0 +1,167 @@
+---
+title: "10 Years of Philadelphia Crime Statistics"
+author: "Aleksei Ostlund"
+date: "16/09/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+__*This data was obtained from OpenDataPhilly.*__
+
+The column names are as follows:
+``` {r message=FALSE, echo=FALSE} 
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+colnames(philadelphia_crime_data)
+```
+The number of rows are as follows:
+```{r message=FALSE, echo=FALSE}
+library('tidyverse')
+nrow(philadelphia_crime_data)
+```
+
+\pagebreak 
+
+Taking a broad look at the data, there has been a general downwards trend in the number of crimes recorded in these 10 years. Monthly variances repeat themselves in all years in a similar manner.
+
+``` {r echo=FALSE, message=FALSE}
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+by_date <-philadelphia_crime_data %>%
+  count(Dispatch_Date) %>%
+  arrange(desc(n))
+
+  ggplot(data=by_date, mapping= aes(x=Dispatch_Date, y=n)) +
+  geom_point(color="red") +
+    stat_smooth(method="lm") +
+    labs(y="Number of Crimes Recorded", x="Date", title="Number of crimes recorded over a 10 year period")
+  
+```
+
+\pagebreak
+
+The negative trend can be seen here again when clearly grouped into years.
+
+``` {r echo=FALSE, message=FALSE}
+
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+by_year <- philadelphia_crime_data %>%
+  separate(Month, c("Year","Month"), sep = "-") %>%
+  count(Year) %>%
+  filter(Year!=2017)
+
+ggplot(data=by_year, mapping= aes(x= Year, y= n)) +
+  geom_bar(stat="identity", fill="green") +
+  labs(title="Number of crimes by year", x= "Year", y="Number of crimes recorded")
+  
+``` 
+
+\pagebreak
+
+Throughout these 10 years, the months with the highest average crimes were in the summer months. Winter months had lower crime rates with February showing a noticeable drop.  
+
+``` {r echo=FALSE, message=FALSE}
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+by_month <- philadelphia_crime_data %>%
+  separate(Month, c("Year","Month"), sep = "-") %>%
+  count(Month)
+
+ggplot(data=by_month, mapping= aes(x=Month, y= n)) +
+  geom_bar(stat="identity", fill="blue") +
+  labs(title="Average number of crimes by month", y="Number of crimes recorded")
+```
+
+\pagebreak
+
+The time of day is a variable that clearly changes the number of crimes committed. Throughout the 10 years it is clear that there is a big drop in the early morning hours between about 2-8 AM. There is a second, minor dip around 3 PM before the number of crimes increases to their highest levels in the evening.
+
+``` {r echo=FALSE, message=FALSE}
+options(scipen = 999)
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+by_hour <- philadelphia_crime_data %>%
+  count(Hour) %>%
+  arrange(desc(n))
+
+ggplot(data=by_hour, mapping= aes(x=Hour, y= n)) +
+  geom_density(stat="identity", color="red") +
+  labs(title="Number of crimes by time of day", y="Number of recorded crimes") +
+  theme_dark()
+```
+
+\pagebreak
+
+When grouped by category, there were a number of groups that contributed to much of the recorded crimes. Non-aggravated assaults, vandalism/criminal mischief, and non-vehicle thefts were the 3 largest segments.  
+
+``` {r echo=FALSE, message=FALSE}
+options(scipen = 999)
+library('tidyverse')
+library('scales')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+by_type <- philadelphia_crime_data %>%
+  count(Text_General_Code) %>%
+  arrange(desc(n)) %>%
+  filter(Text_General_Code != "NA") %>%
+  filter(Text_General_Code != "All Other Offenses")
+
+ggplot(data = by_type, mapping = aes(y= Text_General_Code, x= n)) +
+  geom_bar(stat="identity", fill="gray") +
+  labs(title = "Number of recorded crimes by cateogry", x="Number of recorded crimes", y="Category") +
+  theme_minimal() +
+  scale_x_continuous(breaks= pretty_breaks()) 
+```
+
+\pagebreak
+
+Looking more closely at thefts, one can see that the number of yearly thefts differs quite significantly by police district. This example is from the first 3 districts. 
+
+``` {r echo=FALSE, message=FALSE}
+library('tidyverse')
+library('lubridate')
+library('scales')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+avg_thefts_by_month <- philadelphia_crime_data %>%
+  filter(Text_General_Code=="Thefts") %>%
+  arrange(Dc_Dist, (Dispatch_Date)) %>%
+  count(Dc_Dist, date_year = year(Dispatch_Date)) %>%
+  filter(Dc_Dist=="01" | Dc_Dist=="02" | Dc_Dist=="03") %>%
+  filter(date_year!='2017')
+
+ggplot(data= avg_thefts_by_month, mapping = aes(x=date_year, y= n, color=Dc_Dist, groups(3))) +
+         geom_line() +
+  theme_gray() +
+  labs(title = "Thefts by year in first 3 districts", x="Year", y="Number of incidents", color="District") +
+  scale_x_continuous(breaks= pretty_breaks()) 
+```
+
+\pagebreak
+
+Daily reports of driving under the influence, a major cause of concern, has seen a decline throughout the 10 year period as well. 
+
+``` {r echo=FALSE, message=FALSE}
+library('tidyverse')
+philadelphia_crime_data <- read_csv("C:\\Users\\aleks\\Desktop\\Data Analysis Certificate\\Datasets\\philadelphia_crime_data\\crime.csv", col_names = TRUE)
+
+driving_crimes <- philadelphia_crime_data %>%
+  filter(Text_General_Code == "DRIVING UNDER THE INFLUENCE") %>%
+  count(Dispatch_Date)
+
+ggplot(data = driving_crimes, mapping = aes( x= Dispatch_Date, y=n)) +
+  geom_density(stat="identity", color="red") +
+  labs(title="Daily incidents of driving under the influence", x= "Date", y= "Daily reported incidents")+
+  theme_light() +
+  stat_smooth(method = "lm", color="yellow")
+```
